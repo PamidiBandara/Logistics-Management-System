@@ -373,3 +373,38 @@ void findAndCompleteDistances(){
         printf("No missing distances could be estimated\n");
     }
 }
+
+
+void manageVehicles()
+{
+    int choice;
+    do{
+        printf("\n== Vehicle Management==\n");
+        printf("1.View Vehicle Details\n");
+        printf("2.Select Vehicle For Delivery\n");
+        printf("3.Compare Vehicles\n");
+        printf("4.Back To Main Menu\n");
+        printf("Enter your choice: \n");
+        scanf("%d, &choice");
+
+
+
+        switch(choice){
+            case 1:
+                printf("Not added yet");
+                break;
+            case 2:
+               printf("Not added yet");
+                break;
+            case 3:
+                printf("Not added yet");
+                break;
+            case 4:
+                printf("Returning to main menu\n");
+                break;
+            default:
+                printf("Invalid choice\n");
+        }
+    } while(choice != 4);
+
+}
