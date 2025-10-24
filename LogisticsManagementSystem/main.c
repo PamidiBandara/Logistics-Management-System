@@ -308,3 +308,55 @@ void viewDistanceTable(){
     }
 }
 }
+void initializeSampleData(){
+
+    if(cityCount == 0){
+        strcpy(cities[cityCount++], "Colombo");
+        strcpy(cities[cityCount++], "Kandy");
+        strcpy(cities[cityCount++], "Galle");
+        strcpy(cities[cityCount++], "Jaffna");
+        printf("Sample cities added for testing\n");
+          }
+           if(distance[0][1] == -1){
+              distance[0][1] = 120; distance[1][0] = 120;
+              distance[0][2] = 115; distance[2][0] = 115;
+              distance[0][3] = 400; distance[3][0] = 400;
+              distance[1][2] = 200; distance[2][1] = 200;
+              distance[1][3] = 350; distance[3][1] = 350;
+                    printf("Sample distances initialized\n");
+                }
+            }
+
+void findAndCompleteDistances(){
+    if(cityCount<3){
+        printf("Need at least 3 cities for distance completion\n");
+        return;
+}
+
+    int completed=0;
+
+    for(int i=0; i<cityCount; i++){
+            for(int j=i+1; j<cityCount; j++){
+            if(distance[i][j] == -1){
+
+                for(int k=0; k<cityCount; k++){
+                    if(k!=i && k!=j && distance[i][k] != -1 && distance[k][j] != -1){
+                        int estimated = distance[i][k] + distance[k][j];
+                        distance[i][j] = estimated;
+                        distance[j][i] = estimated;
+                        printf("Estimated distance %s-%s via %s: %d km\n",
+                               cities[i], cities[j], cities[k], estimated);
+                        completed++;
+                        break;
+                        }
+                        }
+                            }
+                                }
+    }
+
+    if(completed>0){
+        printf("Completed %d missing distances using estimation\n", completed);
+    } else{
+        printf("No missing distances could be estimated\n");
+    }
+}
