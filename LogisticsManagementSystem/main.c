@@ -38,6 +38,9 @@ void viewAllCities();
 void addEditDistance();
 void viewDistanceTable();
 
+void initializeSampleData();
+void findAndCompleteDistances();
+
 int main(){
     initializeSystem();
     int choice;
@@ -94,6 +97,7 @@ void initializeSystem(){
             distance[i][j] = -1;
         }
 }
+    initializeSampleData();
     printf("System initialized successfully\n");
 }
 
@@ -225,6 +229,9 @@ void manageDistances(){
         printf("1.Add/Edit Distance\n");
         printf("2.View Distance Table\n");
         printf("3.Back to Main Menu\n");
+        printf("4.Initialize Sample Data\n");
+        printf("5.Back To Main Menu");
+
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
@@ -236,12 +243,18 @@ void manageDistances(){
                 viewDistanceTable();
                 break;
             case 3:
-                printf("Returning to main menu\n");
+                findAndCompleteDistances();
+                break;
+            case 4:
+                initializeSampleData();
+                break;
+            case 5:
+                printf("Returning To Main Menu");
                 break;
             default:
                 printf("Invalid choice\n");
         }
-        }       while(choice!=3);
+        }       while(choice!=5);
 }
 
 void addEditDistance(){
