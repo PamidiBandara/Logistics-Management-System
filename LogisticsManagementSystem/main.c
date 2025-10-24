@@ -58,8 +58,8 @@ int main(){
                 manageDistances();
                 break;
             case 3:
-                printf("Vehicle Management - To be implemented\n");
-                break;
+                manageVehicles();
+                                break;
             case 4:
                 printf("Delivery Request - To be implemented\n");
                 break;
@@ -222,7 +222,7 @@ void viewAllCities(){
 }
 
 void manageDistances(){
-   void manageDistances(){
+
     int choice;
     do{
         printf("\n== Distance Management ==\n");
@@ -249,7 +249,7 @@ void manageDistances(){
                 initializeSampleData();
                 break;
             case 5:
-                printf("Returning To Main Menu");
+                printf("\nReturning To Main Menu");
                 break;
             default:
                 printf("Invalid choice\n");
@@ -320,7 +320,7 @@ void viewDistanceTable(){
         printf("\n");
     }
 }
-}
+
 void initializeSampleData(){
 
     if(cityCount == 0){
@@ -391,10 +391,10 @@ void manageVehicles()
 
         switch(choice){
             case 1:
-                printf("Not added yet");
+                viewVehicleDetails();
                 break;
             case 2:
-               printf("Not added yet");
+                selectVehicle();
                 break;
             case 3:
                 printf("Not added yet");
@@ -408,3 +408,42 @@ void manageVehicles()
     } while(choice != 4);
 
 }
+
+void viewVehicleDetails(){
+    printf("\n== Vehicle Details ==\n");
+    printf("+----------+------------+-------------+----------+-----------------+\n");
+    printf("| Type     | Capacity   | Rate per km | Speed    | Fuel Efficiency |\n");
+    printf("|          | (kg)       | (LKR)       | (km/h)   | (km/l)          |\n");
+    printf("+----------+------------+-------------+----------+-----------------+\n");
+
+    for(int i=0; i<3; i++){
+        printf("| %-8s | %-10d | %-11d | %-8d | %-15d |\n",
+               vehicles[i].name,
+               vehicles[i].capacity,
+               vehicles[i].rate_per_km,
+               vehicles[i].speed,
+               vehicles[i].fuel_efficiency);
+    }
+    printf("+----------+------------+-------------+----------+-----------------+\n");
+}
+
+void selectVehicle(){
+    printf("\n== Select Vehicle ==\n");
+    viewVehicleDetails();
+
+    int choice;
+    printf("\nChoose vehicle (1=Van, 2=Truck, 3=Lorry): ");
+    scanf("%d", &choice);
+
+            if(choice>=1 && choice<=3){
+        printf("Selected vehicle: %s\n", vehicles[choice-1].name);
+        printf("Capacity: %d kg\n", vehicles[choice-1].capacity);
+        printf("Rate: %d LKR/km\n", vehicles[choice-1].rate_per_km);
+        printf("Speed: %d km/h\n", vehicles[choice-1].speed);
+        printf("Fuel Efficiency: %d km/l\n", vehicles[choice-1].fuel_efficiency);
+    }
+    else{
+        printf("Invalid vehicle selection\n");
+    }
+}
+
