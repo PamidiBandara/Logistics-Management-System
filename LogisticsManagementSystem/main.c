@@ -5,6 +5,7 @@
 #define MAX_CITIES 30
 #define MAX_DELIVERIES 50
 #define MAX_NAME_LENGTH 50
+#define FUEL_PRICE 310
 
 typedef struct{
     char name[10];
@@ -13,6 +14,9 @@ typedef struct{
     int speed;
     int fuel_efficiency;
 }    Vehicle;
+
+
+
 
 char cities[MAX_CITIES][MAX_NAME_LENGTH];
 int distance[MAX_CITIES][MAX_CITIES];
@@ -23,6 +27,23 @@ Vehicle vehicles[3] ={
     {"Truck", 5000, 40, 50, 6},
     {"Lorry", 10000, 80, 45, 4}
             };
+
+typedef struct{
+    int id;
+    char fromCity[MAX_NAME_LENGTH];
+    char toCity[MAX_NAME_LENGTH];
+    int distance;
+    char vehicleType[10];
+    int weight;
+    double baseCost;
+    double fuelCost;
+    double totalCost;
+    double profit;
+    double customerCharge;
+    double deliveryTime;
+    int completed;
+}
+    Delivery;
 
 
 void displayMainMenu();
@@ -48,6 +69,8 @@ void compareVehicles();
 void handleDeliveryMenu();
 void handleDeliveryRequest();
 void viewPendingDeliveries();
+void calculateDeliveryCost();
+void displayDeliverySummary(Delivery *delivery, Vehicle *vehicle, double fuelUsed);
 
 int main(){
     initializeSystem();
@@ -75,10 +98,10 @@ int main(){
                 printf("Reports - To be implemented\n");
                 break;
             case 6:
-                printf("Thank you for using Logistics Management System!\n");
+                printf("Thank you for using Logistics Management System\n");
                 break;
             default:
-                printf("Invalid choice! Please try again.\n");
+                printf("Invalid choice! Please try again\n");
         }
     } while(choice!= 6);
 
@@ -500,7 +523,8 @@ void handleDeliveryMenu(){
         printf("1.New Delivery Request\n");
         printf("2.View Pending Deliveries\n");
         printf("3.Calculate Delivery Cost\n");
-        printf("4.Back to Main Menu\n");
+        printf("4.View Completed Deliveries\n");
+        printf("5.Back to Main Menu\n");
 
 
         printf("Enter your choice: ");
@@ -511,12 +535,15 @@ void handleDeliveryMenu(){
                handleDeliveryRequest();
                 break;
             case 2:
-                printf("Not added yet");
-                break;
+                viewPendingDeliveries();
+                                break;
             case 3:
-                printf("Not added yet");
+                calculateDeliveryCost();
                 break;
             case 4:
+                printf("not added yet\n");
+                break;
+            case 5:
                 printf("Returning to main menu\n");
                 break;
             default:
@@ -526,22 +553,6 @@ void handleDeliveryMenu(){
 }
 
 
-typedef struct{
-    int id;
-    char fromCity[MAX_NAME_LENGTH];
-    char toCity[MAX_NAME_LENGTH];
-    int distance;
-    char vehicleType[10];
-    int weight;
-    double baseCost;
-    double fuelCost;
-    double totalCost;
-    double profit;
-    double customerCharge;
-    double deliveryTime;
-    int completed;
-}
-    Delivery;
 
 Delivery deliveries[MAX_DELIVERIES];
 int deliveryCount = 0;
@@ -654,4 +665,93 @@ void viewPendingDeliveries(){
                    }
                     }
     printf("+----+------------------+------------------+----------+----------+----------+\n");
+}
+
+void calculateDeliveryCost(){
+    if(deliveryCount==0){
+        printf("No delivery requests to calculate\n");
+        return;
+            }
+
+    viewPendingDeliveries();
+
+    int deliveryId;
+    printf("Enter delivery ID to calculate cost: ");
+    scanf("%d", &deliveryId);
+
+    if(deliveryId<1 || deliveryId>deliveryCount){
+        printf("Invalid delivery ID\n");
+        return;
+    }
+
+    Delivery *delivery = &deliveries[deliveryId-1];
+
+    if(delivery->completed){
+        printf("Delivery already calculated\n");
+        return;
+    }
+
+
+    Vehicle *vehicle = NULL;
+    for(int i = 0; i < 3; i++){
+        if(strcmp(vehicles[i].name, delivery->vehicleType)==0){
+            vehicle = &vehicles[i];
+            break;
+        }
+    }
+
+    if(vehicle == NULL){
+        printf("Vehicle type not found!\n");
+        return;
+    }
+
+    double D = delivery->distance;
+    double W = delivery->weight;
+    double R = vehicle->rate_per_km;
+    double S = vehicle->speed;
+    double E = vehicle->fuel_efficiency;
+    double F = FUEL_PRICE;
+
+
+    delivery->baseCost = D * R * (1 + W / 10000);
+
+    delivery->deliveryTime = D / S;
+
+    double fuelUsed = D / E;
+
+    delivery->fuelCost = fuelUsed * F;
+
+    delivery->totalCost = delivery->baseCost + delivery->fuelCost;
+
+    delivery->profit = delivery->baseCost * 0.25;
+
+    delivery->customerCharge = delivery->totalCost + delivery->profit;
+
+    delivery->completed = 1;
+
+    displayDeliverySummary(delivery, vehicle, fuelUsed);
+}
+
+void displayDeliverySummary(Delivery *delivery, Vehicle *vehicle, double fuelUsed){
+
+    printf("DELIVERY COST ESTIMATION\n");
+
+    printf("From: %s\n", delivery->fromCity);
+    printf("To: %s\n", delivery->toCity);
+    printf("Minimum Distance: %d km\n", delivery->distance);
+    printf("Vehicle: %s\n", delivery->vehicleType);
+    printf("Weight: %d kg\n", delivery->weight);
+
+
+    printf("Base Cost: %.0f × %.0f × (1 + %.0f/10000) = %8.2f LKR\n",
+           (double)delivery->distance, (double)vehicle->rate_per_km,
+           (double)delivery->weight, delivery->baseCost);
+
+    printf("Fuel Used: %.2f L\n", fuelUsed);
+    printf("Fuel Cost: %.2f LKR\n", delivery->fuelCost);
+    printf("Operational Cost: %.2f LKR\n", delivery->totalCost);
+    printf("Profit: %.2f LKR\n", delivery->profit);
+    printf("Customer Charge: %.2f LKR\n", delivery->customerCharge);
+    printf("Estimated Time: %.2f hours\n", delivery->deliveryTime);
+
 }
