@@ -34,12 +34,17 @@ void addCity();
 void renameCity();
 void removeCity();
 void viewAllCities();
+void manageVehicles();
 
 void addEditDistance();
 void viewDistanceTable();
 
 void initializeSampleData();
 void findAndCompleteDistances();
+void viewVehicleDetails();
+void selectVehicle();
+void compareVehicles();
+
 
 int main(){
     initializeSystem();
@@ -384,8 +389,9 @@ void manageVehicles()
         printf("2.Select Vehicle For Delivery\n");
         printf("3.Compare Vehicles\n");
         printf("4.Back To Main Menu\n");
+
         printf("Enter your choice: \n");
-        scanf("%d, &choice");
+        scanf("%d", &choice);
 
 
 
@@ -397,7 +403,7 @@ void manageVehicles()
                 selectVehicle();
                 break;
             case 3:
-                printf("Not added yet");
+                compareVehicles();
                 break;
             case 4:
                 printf("Returning to main menu\n");
@@ -447,3 +453,39 @@ void selectVehicle(){
     }
 }
 
+void compareVehicles(){
+    printf("\n== Vehicle Comparison ==\n");
+
+    int sampleDistance, weight;
+    printf("Enter sample distance (km): ");
+    scanf("%d", &sampleDistance);
+    printf("Enter sample weight (kg): ");
+    scanf("%d", &weight);
+
+    if(sampleDistance<=0 || weight<=0){
+        printf("Invalid input! Distance and weight must be positive\n");
+        return;
+    }
+
+    printf("\nComparison for %d km with %d kg:\n", sampleDistance, weight);
+    printf("+----------+------------+-----------+-------------+--------------+\n");
+    printf("| Vehicle  | Time (hrs) | Fuel (L)  | Cost (LKR)  | Suitable     |\n");
+    printf("+----------+------------+-----------+-------------+--------------+\n");
+
+    for(int i=0; i<3; i++){
+        double time = (double)sampleDistance / vehicles[i].speed;
+        double fuel = (double)sampleDistance / vehicles[i].fuel_efficiency;
+        double cost = sampleDistance * vehicles[i].rate_per_km * (1 + (double)weight / 10000);
+        char suitable[10];
+
+        if(weight<=vehicles[i].capacity){
+            strcpy(suitable, "Yes");
+        }       else{
+            strcpy(suitable, "No");
+        }
+
+        printf("| %-8s | %-10.2f | %-9.2f | %-11.2f | %-12s |\n",
+               vehicles[i].name, time, fuel, cost, suitable);
+    }
+    printf("+----------+------------+-----------+-------------+--------------+\n");
+}
