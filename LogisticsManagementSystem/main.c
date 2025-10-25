@@ -45,6 +45,9 @@ void viewVehicleDetails();
 void selectVehicle();
 void compareVehicles();
 
+void handleDeliveryMenu();
+
+
 
 int main(){
     initializeSystem();
@@ -66,7 +69,7 @@ int main(){
                 manageVehicles();
                                 break;
             case 4:
-                printf("Delivery Request - To be implemented\n");
+                handleDeliveryMenu();
                 break;
             case 5:
                 printf("Reports - To be implemented\n");
@@ -488,4 +491,36 @@ void compareVehicles(){
                vehicles[i].name, time, fuel, cost, suitable);
     }
     printf("+----------+------------+-----------+-------------+--------------+\n");
+}
+
+void handleDeliveryMenu(){
+    int choice;
+    do      {
+        printf("\n== Delivery Management ==\n");
+        printf("1.New Delivery Request\n");
+        printf("2.View Pending Deliveries\n");
+        printf("3.Calculate Delivery Cost\n");
+        printf("4.Back to Main Menu\n");
+
+
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch(choice){
+            case 1:
+                printf("Not added yet");
+                break;
+            case 2:
+                printf("Not added yet");
+                break;
+            case 3:
+                printf("Not added yet");
+                break;
+            case 4:
+                printf("Returning to main menu\n");
+                break;
+            default:
+                printf("Invalid choice\n");
+        }
+    } while(choice!=4);
 }
