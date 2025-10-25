@@ -7,6 +7,12 @@
 #define MAX_NAME_LENGTH 50
 #define FUEL_PRICE 310
 
+typedef struct {
+    int path[MAX_CITIES];
+    int pathLength;
+    int totalDistance;
+} Route;
+
 typedef struct{
     char name[10];
     int capacity;
@@ -16,19 +22,6 @@ typedef struct{
 }    Vehicle;
 
 
-
-
-char cities[MAX_CITIES][MAX_NAME_LENGTH];
-int distance[MAX_CITIES][MAX_CITIES];
-int cityCount=0;
-
-int deliveryCount = 0;
-
-Vehicle vehicles[3] ={
-    {"Van", 1000, 30, 60, 12},
-    {"Truck", 5000, 40, 50, 6},
-    {"Lorry", 10000, 80, 45, 4}
-            };
 
 typedef struct{
     int id;
@@ -47,6 +40,21 @@ typedef struct{
 
 }
     Delivery;
+
+
+char cities[MAX_CITIES][MAX_NAME_LENGTH];
+int distance[MAX_CITIES][MAX_CITIES];
+int cityCount=0;
+Delivery deliveries[MAX_DELIVERIES];
+int deliveryCount = 0;
+
+Vehicle vehicles[3] ={
+    {"Van", 1000, 30, 60, 12},
+    {"Truck", 5000, 40, 50, 6},
+    {"Lorry", 10000, 80, 45, 4}
+            };
+
+
 
 
 void displayMainMenu();
@@ -81,6 +89,13 @@ int isDeliveryStorageFull();
 void handleDeliveryStorage();
 
 
+void findOptimalRoute();
+ Route findLeastCostRoute(int start, int end);
+ Route bruteForceRoute(int start, int end);
+ Route dijkstraRoute(int start, int end);
+int nextPermutation(int *array, int length);
+void displayOptimalRoute(Route route, int start, int end);
+
 int main(){
     initializeSystem();
     int choice;
@@ -104,7 +119,7 @@ int main(){
                 handleDeliveryMenu();
                 break;
             case 5:
-                printf("Reports - To be implemented\n");
+                findOptimalRoute();
                 break;
             case 6:
                 printf("Thank you for using Logistics Management System\n");
@@ -123,8 +138,9 @@ void displayMainMenu(){
     printf("2.Distance Management\n");
     printf("3.Vehicle Management\n");
     printf("4.Delivery Request\n");
-    printf("5.Reports\n");
-    printf("6.Exit\n");
+    printf("5.Route Optimization\n");
+    printf("6.Reports\n");
+    printf("7.Exit\n");
 }
 
 void initializeSystem(){
@@ -759,7 +775,7 @@ void displayDeliverySummary(Delivery *delivery, Vehicle *vehicle, double fuelUse
     printf("Weight: %d kg\n", delivery->weight);
 
 
-    printf("Base Cost: %.0f � %.0f � (1 + %.0f/10000) = %8.2f LKR\n",
+    printf("Base Cost: %.0f × %.0f × (1 + %.0f/10000) = %8.2f LKR\n",
            (double)delivery->distance, (double)vehicle->rate_per_km,
            (double)delivery->weight, delivery->baseCost);
 
@@ -875,4 +891,253 @@ void manageDeliveryStorage() {
         }
         deliveryCount--;
     }
+}
+
+
+
+void findOptimalRoute(){
+    if(cityCount<2){
+        printf("Need at least 2 cities for route optimization\n");
+        return;
+    }
+
+    viewAllCities();
+
+    int startCity, endCity;
+    printf("Enter start city number: ");
+    scanf("%d", &startCity);
+    printf("Enter end city number: ");
+    scanf("%d", &endCity);
+
+    if(startCity < 1  || startCity > cityCount || endCity < 1 || endCity > cityCount) {
+        printf("Invalid city numbers\n");
+        return;
+    }
+
+    if(startCity == endCity){
+        printf("Start and end cities cannot be the same\n");
+        return;
+    }
+
+
+    int directDistance = distance[startCity-1][endCity-1];
+    if(directDistance != -1){
+        printf("\nDirect route available: %s → %s (%d km)\n",
+               cities[startCity-1], cities[endCity-1], directDistance);
+    } else {
+        printf("\nNo direct route between %s and %s\n", cities[startCity-1], cities[endCity-1]);
+    }
+
+
+    Route optimalRoute = findLeastCostRoute(startCity-1, endCity-1);
+
+    if(optimalRoute.totalDistance == -1){
+        printf("No route found between %s and %s!\n", cities[startCity-1], cities[endCity-1]);
+        return;
+    }
+
+
+    displayOptimalRoute(optimalRoute, startCity-1, endCity-1);
+}
+
+Route findLeastCostRoute(int start, int end){
+    Route bestRoute;
+    bestRoute.totalDistance = -1; // Initialize as invalid
+
+    if(cityCount <= 4) {
+        bestRoute = bruteForceRoute(start, end);
+    } else {
+        bestRoute = dijkstraRoute(start, end);
+    }
+
+    return bestRoute;
+}
+
+Route bruteForceRoute(int start, int end){
+    Route bestRoute;
+    bestRoute.totalDistance = -1;
+
+
+    int intermediate[MAX_CITIES-2];
+    int interCount = 0;
+
+    for(int i = 0; i < cityCount; i++) {
+        if(i != start && i != end) {
+            intermediate[interCount++] = i;
+        }
+    }
+
+
+    if(interCount <= 2){
+        int permutation[4];
+        permutation[0] = start;
+
+
+        if(interCount == 0){
+
+            if(distance[start][end] != -1){
+                bestRoute.path[0] = start;
+                bestRoute.path[1] = end;
+                bestRoute.pathLength = 2;
+                bestRoute.totalDistance = distance[start][end];
+            }
+        } else {
+
+            do {
+
+                permutation[0] = start;
+                for(int i = 0; i < interCount; i++) {
+                    permutation[i+1] = intermediate[i];
+                }
+                permutation[interCount+1] = end;
+
+
+                int totalDist = 0;
+                int valid = 1;
+
+                for(int i = 0; i < interCount+1; i++) {
+                    int from = permutation[i];
+                    int to = permutation[i+1];
+
+                    if(distance[from][to] == -1) {
+                        valid = 0;
+                        break;
+                    }
+                    totalDist += distance[from][to];
+                }
+
+
+                if(valid && (bestRoute.totalDistance == -1 || totalDist < bestRoute.totalDistance)) {
+                    bestRoute.totalDistance = totalDist;
+                    bestRoute.pathLength = interCount + 2;
+                    for(int i = 0; i < bestRoute.pathLength; i++) {
+                        bestRoute.
+      path[i] = permutation[i];
+                    }
+                }
+
+            } while(nextPermutation(intermediate, interCount));
+        }
+    }
+
+    return bestRoute;
+}
+
+
+int nextPermutation(int *array, int length){
+    if(length < 2) return 0;
+
+    int i = length - 2;
+    while(i >= 0 && array[i] >= array[i+1]) i--;
+    if(i < 0) return 0;
+
+    int j = length - 1;
+    while(array[j] <= array[i]) j--;
+
+
+    int temp = array[i];
+    array[i] = array[j];
+    array[j] = temp;
+
+
+    int left = i + 1, right = length - 1;
+    while(left < right) {
+        temp = array[left];
+        array[left] = array[right];
+        array[right] = temp;
+        left++;
+        right--;
+    }
+
+    return 1;
+}
+
+Route dijkstraRoute(int start, int end){
+    Route route;
+    route.totalDistance = -1;
+
+    int dist[MAX_CITIES];
+    int prev[MAX_CITIES];
+    int visited[MAX_CITIES] = {0};
+
+
+    for(int i=0; i<MAX_CITIES; i++){
+        dist[i] = -1;
+        prev[i] = -1;
+    }
+    dist[start] = 0;
+
+    for(int count=0; count<cityCount; count++){
+
+        int minDist = -1;
+        int current = -1;
+
+        for(int i=0; i<cityCount; i++){
+            if(!visited[i] && dist[i] != -1 && (minDist == -1 || dist[i] < minDist)) {
+                minDist = dist[i];
+                current = i;
+            }
+        }
+
+        if(current == -1 || current == end) break;
+        visited[current] = 1;
+
+
+        for(int neighbor = 0; neighbor < cityCount; neighbor++){
+            if(!visited[neighbor] && distance[current][neighbor] != -1){
+                int newDist = dist[current] + distance[current][neighbor];
+                if(dist[neighbor] == -1 || newDist < dist[neighbor]){
+                    dist[neighbor] = newDist;
+                    prev[neighbor] = current;
+                }
+                    }
+                    }
+    }
+
+
+    if(dist[end] != -1){
+        route.totalDistance = dist[end];
+
+
+        int path[MAX_CITIES];
+        int current = end;
+        route.pathLength = 0;
+
+        while(current != -1){
+            path[route.pathLength++] = current;
+            current = prev[current];
+        }
+
+
+        for(int i=0; i<route.pathLength; i++){
+            route.path[i] = path[route.pathLength - 1 - i];
+        }
+    }
+
+    return route;
+}
+
+void displayOptimalRoute(Route route, int start, int end){
+    printf("\n== OPTIMAL ROUTE FOUND ==\n");
+    printf("From: %s\n", cities[start]);
+    printf("To: %s\n", cities[end]);
+    printf("Total Distance: %d km\n", route.totalDistance);
+    printf("Route: ");
+
+    for(int i=0; i<route.pathLength; i++){
+        printf("%s", cities[route.path[i]]);
+        if(i < route.pathLength - 1) {
+            printf(" -> ");
+        }
+    }
+    printf("\n");
+
+
+    printf("Segment Breakdown:\n");
+    for(int i=0; i<route.pathLength-1; i++){
+        int from=route.path[i];
+        int to=route.path[i+1];
+        printf("  %s → %s: %d km\n", cities[from], cities[to], distance[from][to]);
+    }
+    printf("===========================\n");
 }
