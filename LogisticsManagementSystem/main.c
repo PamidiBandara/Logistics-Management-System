@@ -22,6 +22,8 @@ char cities[MAX_CITIES][MAX_NAME_LENGTH];
 int distance[MAX_CITIES][MAX_CITIES];
 int cityCount=0;
 
+int deliveryCount = 0;
+
 Vehicle vehicles[3] ={
     {"Van", 1000, 30, 60, 12},
     {"Truck", 5000, 40, 50, 6},
@@ -42,6 +44,7 @@ typedef struct{
     double customerCharge;
     double deliveryTime;
     int completed;
+
 }
     Delivery;
 
@@ -67,10 +70,16 @@ void selectVehicle();
 void compareVehicles();
 
 void handleDeliveryMenu();
-void handleDeliveryRequest();
+void handleDeliveryRequestEnhanced();
 void viewPendingDeliveries();
 void calculateDeliveryCost();
 void displayDeliverySummary(Delivery *delivery, Vehicle *vehicle, double fuelUsed);
+void viewCompletedDeliveries();
+
+void viewAllDeliveryRecords();
+int isDeliveryStorageFull();
+void handleDeliveryStorage();
+
 
 int main(){
     initializeSystem();
@@ -524,7 +533,9 @@ void handleDeliveryMenu(){
         printf("2.View Pending Deliveries\n");
         printf("3.Calculate Delivery Cost\n");
         printf("4.View Completed Deliveries\n");
-        printf("5.Back to Main Menu\n");
+        printf("5.View All Delivery Records\n");
+        printf("6.Check Storage Status\n");
+        printf("7.Back to Main Menu\n");
 
 
         printf("Enter your choice: ");
@@ -532,7 +543,7 @@ void handleDeliveryMenu(){
 
         switch(choice){
             case 1:
-               handleDeliveryRequest();
+               handleDeliveryRequestEnhanced();
                 break;
             case 2:
                 viewPendingDeliveries();
@@ -541,25 +552,36 @@ void handleDeliveryMenu(){
                 calculateDeliveryCost();
                 break;
             case 4:
-                printf("not added yet\n");
+               viewCompletedDeliveries();
                 break;
             case 5:
+               viewAllDeliveryRecords();
+                break;
+            case 6:
+               printf("Delivery Storage: %d/%d used (%.1f%% full)\n", deliveryCount, MAX_DELIVERIES, (double)deliveryCount/MAX_DELIVERIES*100);
+                break;
+            case 7:
                 printf("Returning to main menu\n");
                 break;
             default:
                 printf("Invalid choice\n");
         }
-    } while(choice!=4);
+    } while(choice!=7);
 }
 
 
 
 Delivery deliveries[MAX_DELIVERIES];
-int deliveryCount = 0;
 
-void handleDeliveryRequest(){
+
+
+void handleDeliveryRequestEnhanced(){
+    if(isDeliveryStorageFull()){
+        manageDeliveryStorage();
+    }
+
     if(cityCount<2){
-        printf("Need at least 2 cities for delivery\n");
+        printf("Need at least 2 cities for delivery!\n");
         return;
     }
 
@@ -571,8 +593,8 @@ void handleDeliveryRequest(){
 
     printf("Enter source city number: ");
     scanf("%d", &fromCity);
-    if(fromCity<1 || fromCity>cityCount){
-        printf("Invalid source city\n");
+    if(fromCity < 1 || fromCity>cityCount) {
+        printf("Invalid source city!\n");
         return;
     }
 
@@ -582,65 +604,59 @@ void handleDeliveryRequest(){
     if(toCity<1 || toCity>cityCount){
         printf("Invalid destination city\n");
         return;
-            }
+    }
 
     if(fromCity==toCity){
         printf("Source and destination cannot be the same\n");
         return;
-        }
+    }
 
 
     int dist=distance[fromCity-1][toCity-1];
-    if(dist==-1) {
-        printf("No route exists between %s and %s\n", cities[fromCity-1], cities[toCity-1]);
+    if(dist ==-1){
+        printf("No route exists between %s and %s!\n", cities[fromCity-1], cities[toCity-1]);
         return;
     }
 
+
     printf("Enter package weight (kg): ");
     scanf("%d", &weight);
-    if(weight <= 0){
+    if(weight<=0){
         printf("Weight must be positive\n");
         return;
     }
+
 
     viewVehicleDetails();
     printf("Select vehicle (1=Van, 2=Truck, 3=Lorry): ");
     scanf("%d", &vehicleChoice);
 
     if(vehicleChoice<1 || vehicleChoice>3){
-        printf("Invalid vehicle selection\n");
+        printf("Invalid vehicle selection!\n");
         return;
     }
 
 
-    if(weight>vehicles[vehicleChoice-1].capacity){
-        printf("Weight exceeds %s capacity (%d kg) Please select another vehicle.\n",
+    if(weight > vehicles[vehicleChoice-1].capacity){
+        printf("Weight exceeds %s capacity (%d kg)! Please select another vehicle.\n",
                vehicles[vehicleChoice-1].name, vehicles[vehicleChoice-1].capacity);
         return;
     }
 
-    printf("\nDelivery request validated successfully\n");
-    printf("Route: %s - %s (%d km)\n", cities[fromCity-1], cities[toCity-1], dist);
-    printf("Weight: %d kg\n", weight);
-    printf("Vehicle: %s\n", vehicles[vehicleChoice-1].name);
+    deliveries[deliveryCount].id = deliveryCount + 1;
+    strcpy(deliveries[deliveryCount].fromCity, cities[fromCity-1]);
+    strcpy(deliveries[deliveryCount].toCity, cities[toCity-1]);
+    deliveries[deliveryCount].distance = dist;
+    strcpy(deliveries[deliveryCount].vehicleType, vehicles[vehicleChoice-1].name);
+    deliveries[deliveryCount].weight = weight;
+    deliveries[deliveryCount].completed = 0;
 
-
-    if(deliveryCount < MAX_DELIVERIES){
-        deliveries[deliveryCount].id = deliveryCount + 1;
-        strcpy(deliveries[deliveryCount].fromCity, cities[fromCity-1]);
-        strcpy(deliveries[deliveryCount].toCity, cities[toCity-1]);
-        deliveries[deliveryCount].distance = dist;
-        strcpy(deliveries[deliveryCount].vehicleType, vehicles[vehicleChoice-1].name);
-        deliveries[deliveryCount].weight = weight;
-        deliveries[deliveryCount].completed = 0;
-
-        printf("Delivery request stored (ID: %d)\n", deliveries[deliveryCount].id);
-        deliveryCount++;
-    } else
-    {
-        printf("Delivery storage full! Cannot add more deliveries\n");
-    }
+    printf("Delivery request stored (ID: %d)\n", deliveries[deliveryCount].id);
+    printf("Storage: %d/%d deliveries used\n", deliveryCount + 1, MAX_DELIVERIES);
+    deliveryCount++;
 }
+
+
 
 void viewPendingDeliveries(){
     if(deliveryCount==0){
@@ -754,4 +770,109 @@ void displayDeliverySummary(Delivery *delivery, Vehicle *vehicle, double fuelUse
     printf("Customer Charge: %.2f LKR\n", delivery->customerCharge);
     printf("Estimated Time: %.2f hours\n", delivery->deliveryTime);
 
+}
+
+void viewCompletedDeliveries(){
+    int completedCount=0;
+
+    printf("\n== Completed Deliveries ==\n");
+    printf("+----+------------------+------------------+----------+------------+----------------+\n");
+    printf("| ID | From             | To               | Distance | Total Cost | Customer Charge|\n");
+    printf("+----+------------------+------------------+----------+------------+----------------+\n");
+
+    for(int i=0; i<deliveryCount; i++){
+        if(deliveries[i].completed){
+            printf("| %-2d | %-16s | %-16s | %-8d | %10.2f | %14.2f |\n",
+                   deliveries[i].id,
+                   deliveries[i].fromCity,
+                   deliveries[i].toCity,
+                   deliveries[i].distance,
+                   deliveries[i].totalCost,
+                   deliveries[i].customerCharge);
+            completedCount++;
+        }
+    }
+    printf("+----+------------------+------------------+----------+------------+----------------+\n");
+
+    if(completedCount==0){
+        printf("No completed deliveries found\n");
+    }
+}
+
+
+
+void viewAllDeliveryRecords(){
+    if(deliveryCount==0){
+        printf("No delivery records available\n");
+        return;
+    }
+
+    printf("\n== All Delivery Records (%d/%d) ==\n", deliveryCount, MAX_DELIVERIES);
+    printf("+----+----------+------------------+------------------+----------+----------+------------+----------------+\n");
+    printf("| ID | Status   | From             | To               | Distance | Weight   | Total Cost | Customer Charge|\n");
+    printf("+----+----------+------------------+------------------+----------+----------+------------+----------------+\n");
+
+    for(int i=0; i<deliveryCount; i++){
+        char status[10];
+        if(deliveries[i].completed){
+            strcpy(status, "Completed");
+        } else  {
+            strcpy(status, "Pending");
+        }
+
+        printf("| %-2d | %-8s | %-16s | %-16s | %-8d | %-8d | %10.2f | %14.2f |\n",
+               deliveries[i].id,
+               status,
+               deliveries[i].fromCity,
+               deliveries[i].toCity,
+               deliveries[i].distance,
+               deliveries[i].weight,
+               deliveries[i].totalCost,
+               deliveries[i].customerCharge);
+    }
+    printf("+----+----------+------------------+------------------+----------+----------+------------+----------------+\n");
+
+    printf("Storage: %d/%d deliveries used (%.1f%% full)\n",
+           deliveryCount, MAX_DELIVERIES, (double)deliveryCount/MAX_DELIVERIES*100);
+}
+
+int isDeliveryStorageFull() {
+    return deliveryCount >= MAX_DELIVERIES;
+}
+
+
+void manageDeliveryStorage() {
+    if(!isDeliveryStorageFull()) {
+        return;
+    }
+
+    printf("\nDelivery storage full (%d/%d)! Managing storage\n", deliveryCount, MAX_DELIVERIES);
+
+
+    int oldestPendingIndex = -1;
+    for(int i = 0; i < deliveryCount; i++){
+        if(!deliveries[i].completed){
+            oldestPendingIndex = i;
+            break;
+        }
+    }
+
+    if(oldestPendingIndex!=-1){
+        printf("Removing oldest pending delivery (ID: %d) to free space.\n", deliveries[oldestPendingIndex].id);
+
+
+        for(int i = oldestPendingIndex; i < deliveryCount - 1; i++) {
+            deliveries[i] = deliveries[i + 1];
+            deliveries[i].id = i + 1;
+        }
+        deliveryCount--;
+    } else{
+
+        printf("Removing oldest completed delivery (ID: %d) to free space.\n", deliveries[0].id);
+        for(int i = 0; i < deliveryCount - 1; i++){
+            deliveries[i] = deliveries[i + 1];
+            deliveries[i].id = i + 1;
+        }
+        deliveryCount--;
+    }
 }
