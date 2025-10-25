@@ -96,6 +96,11 @@ void findOptimalRoute();
 int nextPermutation(int *array, int length);
 void displayOptimalRoute(Route route, int start, int end);
 
+void generatePerformanceReports();
+void vehiclePerformanceReport();
+void cityPerformanceReport();
+void handleReportsMenu();
+
 int main(){
     initializeSystem();
     int choice;
@@ -122,7 +127,7 @@ int main(){
                 findOptimalRoute();
                 break;
             case 6:
-                printf("Thank you for using Logistics Management System\n");
+                handleReportsMenu();
                 break;
             default:
                 printf("Invalid choice! Please try again\n");
@@ -139,7 +144,7 @@ void displayMainMenu(){
     printf("3.Vehicle Management\n");
     printf("4.Delivery Request\n");
     printf("5.Route Optimization\n");
-    printf("6.Reports\n");
+    printf("6.Performance Reports\n");
     printf("7.Exit\n");
 }
 
@@ -1140,4 +1145,208 @@ void displayOptimalRoute(Route route, int start, int end){
         printf("  %s → %s: %d km\n", cities[from], cities[to], distance[from][to]);
     }
     printf("===========================\n");
+}
+
+
+void generatePerformanceReports(){
+    if(deliveryCount == 0){
+        printf("No delivery data available for reports\n");
+        return;
+    }
+
+    int completedCount = 0;
+    double totalDistance = 0;
+    double totalDeliveryTime = 0;
+    double totalRevenue = 0;
+    double totalProfit = 0;
+    int longestRoute = 0;
+    int shortestRoute = -1;
+
+
+    for(int i=0; i<deliveryCount; i++){
+        if(deliveries[i].completed){
+            completedCount++;
+            totalDistance += deliveries[i].distance;
+            totalDeliveryTime += deliveries[i].deliveryTime;
+            totalRevenue += deliveries[i].customerCharge;
+            totalProfit += deliveries[i].profit;
+
+
+            if(deliveries[i].distance>longestRoute){
+                longestRoute = deliveries[i].distance;
+            }
+
+
+            if(shortestRoute == -1 || deliveries[i].distance < shortestRoute){
+                shortestRoute = deliveries[i].distance;
+            }
+        }
+    }
+
+
+    printf("\n==============================================\n");
+    printf("          PERFORMANCE REPORTS\n");
+    printf("==============================================\n");
+
+    printf("a. Total Deliveries Completed: %d\n", completedCount);
+    printf("   Pending Deliveries: %d\n", deliveryCount - completedCount);
+    printf("   Completion Rate: %.1f%%\n", (double)completedCount/deliveryCount*100);
+
+    printf("b. Total Distance Covered: %.0f km\n", totalDistance);
+    printf("   Average per Delivery: %.1f km\n", completedCount > 0 ? totalDistance/completedCount : 0);
+
+
+    printf("c. Average Delivery Time: %.2f hours\n", completedCount > 0 ? totalDeliveryTime/completedCount : 0);
+    printf("   Total Delivery Time: %.1f hours\n", totalDeliveryTime);
+
+
+    printf("d. Financial Summary:\n");
+    printf("   Total Revenue: %.2f LKR\n", totalRevenue);
+    printf("   Total Profit: %.2f LKR\n", totalProfit);
+    printf("   Profit Margin: %.1f%%\n", totalRevenue > 0 ? (totalProfit/totalRevenue)*100 : 0);
+
+
+    printf("e. Route Statistics:\n");
+    printf("   Longest Route: %d km\n", longestRoute);
+    printf("   Shortest Route: %d km\n", shortestRoute);
+    printf("   Route Length Range: %d km\n", longestRoute - shortestRoute);
+
+    printf("==============================================\n");
+}
+
+void vehiclePerformanceReport(){
+    printf("\n== VEHICLE PERFORMANCE REPORT ==\n");
+
+    int vanDeliveries = 0, truckDeliveries = 0, lorryDeliveries = 0;
+    double vanRevenue = 0, truckRevenue = 0, lorryRevenue = 0;
+    double vanDistance = 0, truckDistance = 0, lorryDistance = 0;
+
+    for(int i = 0; i < deliveryCount; i++){
+        if(deliveries[i].completed) {
+            if(strcmp(deliveries[i].vehicleType, "Van") == 0){
+                vanDeliveries++;
+                vanRevenue += deliveries[i].customerCharge;
+                vanDistance += deliveries[i].distance;
+            } else if(strcmp(deliveries[i].vehicleType, "Truck") == 0){
+                truckDeliveries++;
+                truckRevenue += deliveries[i].customerCharge;
+                truckDistance += deliveries[i].distance;
+            } else if(strcmp(deliveries[i].vehicleType, "Lorry") == 0){
+                lorryDeliveries++;
+                lorryRevenue += deliveries[i].customerCharge;
+                lorryDistance += deliveries[i].distance;
+            }
+        }
+    }
+
+    printf("+----------+------------+-------------+----------------+----------------+\n");
+    printf("| Vehicle  | Deliveries | Total Revenue | Total Distance | Avg Revenue/Del |\n");
+    printf("+----------+------------+-------------+----------------+----------------+\n");
+
+    printf("| %-8s | %-10d | %11.2f | %14.0f | %14.2f |\n",
+           "Van", vanDeliveries, vanRevenue, vanDistance,
+           vanDeliveries > 0 ? vanRevenue/vanDeliveries : 0);
+
+    printf("| %-8s | %-10d | %11.2f | %14.0f | %14.2f |\n",
+           "Truck", truckDeliveries, truckRevenue, truckDistance,
+           truckDeliveries > 0 ? truckRevenue/truckDeliveries : 0);
+
+    printf("| %-8s | %-10d | %11.2f | %14.0f | %14.2f |\n",
+           "Lorry", lorryDeliveries, lorryRevenue, lorryDistance,
+           lorryDeliveries > 0 ? lorryRevenue/lorryDeliveries : 0);
+
+    printf("+----------+------------+-------------+----------------+----------------+\n");
+}
+
+void cityPerformanceReport(){
+    printf("\n== CITY PERFORMANCE REPORT ==\n");
+
+    int cityStats[MAX_CITIES] = {0};
+    double cityRevenue[MAX_CITIES] = {0};
+
+
+    for(int i=0; i<deliveryCount; i++){
+        if(deliveries[i].completed){
+            for(int j = 0; j < cityCount; j++){
+                if(strcmp(deliveries[i].fromCity, cities[j]) == 0){
+                    cityStats[j]++;
+                    cityRevenue[j] += deliveries[i].customerCharge;
+                    break;
+                }
+            }
+        }
+    }
+
+    printf("Most Active Cities (by deliveries):\n");
+    printf("+----------+------------------+------------+-------------+\n");
+    printf("| Rank     | City Name        | Deliveries | Total Revenue|\n");
+    printf("+----------+------------------+------------+-------------+\n");
+
+
+    for(int i = 0; i < cityCount - 1; i++) {
+        for(int j = i + 1; j < cityCount; j++) {
+            if(cityStats[j] > cityStats[i]) {
+
+                int tempCount = cityStats[i];
+                cityStats[i] = cityStats[j];
+                cityStats[j] = tempCount;
+
+                double tempRevenue = cityRevenue[i];
+                cityRevenue[i] = cityRevenue[j];
+                cityRevenue[j] = tempRevenue;
+
+
+                char tempName[MAX_NAME_LENGTH];
+                strcpy(tempName, cities[i]);
+                strcpy(cities[i], cities[j]);
+                strcpy(cities[j], tempName);
+            }
+        }
+    }
+
+
+    int displayCount = cityCount < 5 ? cityCount : 5;
+    for(int i = 0; i < displayCount; i++) {
+        if(cityStats[i] > 0) {
+            printf("| %-8d | %-16s | %-10d | %11.2f |\n",
+                   i + 1, cities[i], cityStats[i], cityRevenue[i]);
+        }
+    }
+    printf("+----------+------------------+------------+-------------+\n");
+}
+
+void handleReportsMenu() {
+    int choice;
+    do {
+        printf("\n=== PERFORMANCE REPORTS ===\n");
+        printf("1. Overall Performance Summary\n");
+        printf("2. Vehicle Performance Report\n");
+        printf("3. City Performance Report\n");
+        printf("4. All Reports\n");
+        printf("5. Back to Main Menu\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch(choice){
+            case 1:
+                generatePerformanceReports();
+                break;
+            case 2:
+                vehiclePerformanceReport();
+                break;
+            case 3:
+                cityPerformanceReport();
+                break;
+            case 4:
+                generatePerformanceReports();
+                vehiclePerformanceReport();
+                cityPerformanceReport();
+                break;
+            case 5:
+                printf("Returning to main menu\n");
+                break;
+            default:
+                printf("Invalid choice\n");
+        }
+    } while(choice != 5);
 }
