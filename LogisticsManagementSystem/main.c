@@ -101,8 +101,18 @@ void vehiclePerformanceReport();
 void cityPerformanceReport();
 void handleReportsMenu();
 
+void saveRoutesToFile();
+void loadRoutesFromFile();
+void saveDeliveriesToFile();
+void loadDeliveriesFromFile();
+void saveAllData();
+void loadAllData();
+void initializeSystemWithFiles();
+void exitSystemWithSave();
+void handleFileOperationsMenu();
+
 int main(){
-    initializeSystem();
+    initializeSystemWithFiles();
     int choice;
 
     do{
@@ -129,10 +139,16 @@ int main(){
             case 6:
                 handleReportsMenu();
                 break;
+            case 7:
+                handleFileOperationsMenu();
+                break;
+            case 8:
+                exitSystemWithSave();
+                break;
             default:
                 printf("Invalid choice! Please try again\n");
         }
-    } while(choice!= 6);
+    } while(choice!= 8);
 
     return 0;
 }
@@ -145,7 +161,8 @@ void displayMainMenu(){
     printf("4.Delivery Request\n");
     printf("5.Route Optimization\n");
     printf("6.Performance Reports\n");
-    printf("7.Exit\n");
+    printf("7.File Operations\n");
+    printf("8.Exit\n");
 }
 
 void initializeSystem(){
@@ -289,7 +306,7 @@ void manageDistances(){
         printf("\n== Distance Management ==\n");
         printf("1.Add/Edit Distance\n");
         printf("2.View Distance Table\n");
-        printf("3.Back to Main Menu\n");
+        printf("3.Auto Complete Missing Distances\n");
         printf("4.Initialize Sample Data\n");
         printf("5.Back To Main Menu");
 
@@ -598,7 +615,7 @@ Delivery deliveries[MAX_DELIVERIES];
 
 void handleDeliveryRequestEnhanced(){
     if(isDeliveryStorageFull()){
-        manageDeliveryStorage();
+        handleDeliveryStorage();
     }
 
     if(cityCount<2){
@@ -862,7 +879,7 @@ int isDeliveryStorageFull() {
 }
 
 
-void manageDeliveryStorage() {
+void handleDeliveryStorage() {
     if(!isDeliveryStorageFull()) {
         return;
     }
@@ -947,7 +964,7 @@ void findOptimalRoute(){
 
 Route findLeastCostRoute(int start, int end){
     Route bestRoute;
-    bestRoute.totalDistance = -1; // Initialize as invalid
+    bestRoute.totalDistance = -1;
 
     if(cityCount <= 4) {
         bestRoute = bruteForceRoute(start, end);
@@ -1341,6 +1358,251 @@ void handleReportsMenu() {
                 generatePerformanceReports();
                 vehiclePerformanceReport();
                 cityPerformanceReport();
+                break;
+            case 5:
+                printf("Returning to main menu\n");
+                break;
+            default:
+                printf("Invalid choice\n");
+        }
+    } while(choice != 5);
+}
+
+
+void saveRoutesToFile(){
+    FILE *file = fopen("routes.txt", "w");
+    if(file == NULL){
+        printf("Error creating routes file!\n");
+        return;
+    }
+
+
+    fprintf(file, "Cities:%d\n", cityCount);
+    for(int i=0; i < cityCount; i++){
+        fprintf(file, "%s\n", cities[i]);
+    }
+
+
+    fprintf(file, "DistanceMatrix\n");
+    for(int i=0; i<cityCount; i++){
+        for(int j=0; j<cityCount; j++){
+            fprintf(file, "%d", distance[i][j]);
+            if(j < cityCount - 1) fprintf(file, ",");
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+    printf("Routes data saved to routes.txt\n");
+}
+
+void loadRoutesFromFile(){
+    FILE *file = fopen("routes.txt", "r");
+    if(file == NULL){
+        printf("No existing routes data found.\n");
+        return;
+    }
+
+    char line[200];
+
+    if(fscanf(file, "Cities:%d\n", &cityCount) != 1) {
+        printf("Error reading cities from file.\n");
+        fclose(file);
+        return;
+    }
+
+    for(int i=0; i<cityCount; i++){
+        if(fgets(line, sizeof(line), file) == NULL){
+            printf("Error reading city data.\n");
+            break;
+        }
+        line[strcspn(line, "\n")] = 0;
+        strcpy(cities[i], line);
+    }
+
+
+    if(fgets(line, sizeof(line), file) == NULL){
+        printf("Error reading distance matrix header.\n");
+        fclose(file);
+        return;
+    }
+
+
+    for(int i = 0; i < cityCount; i++){
+        for(int j = 0; j < cityCount; j++){
+            if(fscanf(file, "%d", &distance[i][j]) != 1){
+                printf("Error reading distance matrix.\n");
+                fclose(file);
+                return;
+            }
+            if(j < cityCount - 1) fgetc(file);
+        }
+        fgetc(file);
+    }
+
+    fclose(file);
+    printf("Loaded %d cities and distance matrix from routes.txt\n", cityCount);
+}
+
+void saveDeliveriesToFile() {
+    FILE *file = fopen("deliveries.txt", "w");
+    if(file == NULL) {
+        printf("Error creating deliveries file!\n");
+        return;
+    }
+
+    fprintf(file, "DeliveryCount:%d\n", deliveryCount);
+
+    for(int i = 0; i < deliveryCount; i++){
+        fprintf(file, "%d|%s|%s|%d|%s|%d|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f|%d\n",
+                deliveries[i].id,
+                deliveries[i].fromCity,
+                deliveries[i].toCity,
+                deliveries[i].distance,
+                deliveries[i].vehicleType,
+                deliveries[i].weight,
+                deliveries[i].baseCost,
+                deliveries[i].fuelCost,
+                deliveries[i].totalCost,
+                deliveries[i].profit,
+                deliveries[i].customerCharge,
+                deliveries[i].deliveryTime,
+                deliveries[i].completed);
+    }
+
+    fclose(file);
+    printf("Delivery records saved to deliveries.txt\n");
+}
+
+void loadDeliveriesFromFile(){
+    FILE *file = fopen("deliveries.txt", "r");
+    if(file == NULL){
+        printf("No existing delivery records found.\n");
+        return;
+    }
+
+
+    if(fscanf(file, "DeliveryCount:%d\n", &deliveryCount) != 1){
+        printf("Error reading delivery count from file.\n");
+        fclose(file);
+        return;
+    }
+
+
+    for(int i = 0; i < deliveryCount; i++){
+        Delivery *d = &deliveries[i];
+        char line[500];
+
+        if(fgets(line, sizeof(line), file) == NULL){
+            printf("Error reading delivery record %d.\n", i);
+            break;
+        }
+
+        char *token = strtok(line, "|");
+        if(token) d->id = atoi(token);
+
+        token = strtok(NULL, "|");
+        if(token) strcpy(d->fromCity, token);
+
+        token = strtok(NULL, "|");
+        if(token) strcpy(d->toCity, token);
+
+        token = strtok(NULL, "|");
+        if(token) d->distance = atoi(token);
+
+        token = strtok(NULL, "|");
+        if(token) strcpy(d->vehicleType, token);
+
+        token = strtok(NULL, "|");
+        if(token) d->weight = atoi(token);
+
+        token = strtok(NULL, "|");
+        if(token) d->baseCost = atof(token);
+
+        token = strtok(NULL, "|");
+        if(token) d->fuelCost = atof(token);
+
+        token = strtok(NULL, "|");
+        if(token) d->totalCost = atof(token);
+
+        token = strtok(NULL, "|");
+        if(token) d->profit = atof(token);
+
+        token = strtok(NULL, "|");
+        if(token) d->customerCharge = atof(token);
+
+        token = strtok(NULL, "|");
+        if(token) d->deliveryTime = atof(token);
+
+        token = strtok(NULL, "|");
+        if(token) d->completed = atoi(token);
+    }
+
+    fclose(file);
+    printf("Loaded %d delivery records from deliveries.txt\n", deliveryCount);
+}
+
+void saveAllData() {
+    saveRoutesToFile();
+    saveDeliveriesToFile();
+    printf("All data saved successfully!\n");
+}
+
+void loadAllData() {
+    loadRoutesFromFile();
+    loadDeliveriesFromFile();
+    printf("All data loaded successfully!\n");
+}
+
+void initializeSystemWithFiles(){
+    for(int i = 0; i < MAX_CITIES; i++){
+        for(int j = 0; j < MAX_CITIES; j++){
+            if(i == j)
+                distance[i][j] = 0;
+            else
+                distance[i][j] = -1;
+        }
+    }
+
+    loadAllData();
+
+    if(cityCount == 0){
+        initializeSampleData();
+        printf("Sample data initialized for testing.\n");
+    }
+
+    printf("System initialized with file handling!\n");
+}
+
+void exitSystemWithSave(){
+    saveAllData();
+    printf("All data saved to files. Thank you for using Logistics Management System!\n");
+}
+
+void handleFileOperationsMenu(){
+    int choice;
+    do {
+        printf("\n=== FILE OPERATIONS ===\n");
+        printf("1.Save All Data to Files\n");
+        printf("2.Load All Data from Files\n");
+        printf("3.Save Routes Only\n");
+        printf("4.Save Deliveries Only\n");
+        printf("5.Back to Main Menu\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        switch(choice){
+            case 1:
+                saveAllData();
+                break;
+            case 2:
+                loadAllData();
+                break;
+            case 3:
+                saveRoutesToFile();
+                break;
+            case 4:
+                saveDeliveriesToFile();
                 break;
             case 5:
                 printf("Returning to main menu\n");
